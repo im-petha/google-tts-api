@@ -1,5 +1,6 @@
 import requests
-from flask import Flask, request, Response
+from flask import Flask, request, Response, jsonify
+from flask_compress import Compress
 
 app = Flask(__name__)
 
@@ -7,41 +8,24 @@ app = Flask(__name__)
 def tts():
     number = request.args.get('amount')
     ccy = request.args.get('ccy')
-    ccyStr = 'dollar'
-    
-    print(ccy)
     if not number:
-        return {'error': 'Invalid number'}, 400
+        return jsonify(error='Invalid number'), 400
 
-    if ccy == '116':
-        
-        print(ccyStr)
-        ccyStr = '៛'
-  
-    print(ccyStr)
-    
-    phrase = f"បានទទួល {number} {ccyStr}"
-    tts_url = "https://translate.google.com/translate_tts"
-    params = {
-        "ie": "UTF-8",
-        "client": "tw-ob",
-        "tl": "km",
-        "q": phrase
-    }
-
-    headers = {
-        "User-Agent": "Mozilla/5.0"
-    }
+    ccy_map = {'116': 'រៀល'}
+    ccy_str = ccy_map.get(ccy, 'ដុល្លា')
+    # phrase = f"បានទទួល {number} {ccy_str}"
+    phrase = f"{number} {ccy_str}"
 
     try:
-        r = requests.get(tts_url, params=params, headers=headers)
-        if r.status_code == 200:
-            return Response(r.content, content_type='audio/mp3')
-        else:
-            return {'error': f'Google TTS returned {r.status_code}'}, r.status_code
+        r = requests.get(
+            "https://translate.google.com/translate_tts",
+            params={"ie": "UTF-8", "client": "tw-ob", "tl": "km", "q": phrase},
+            headers={"User-Agent": "Mozilla/5.0"}
+        )
+        return Response(r.content, content_type='audio/mp3') if r.ok else (
+            jsonify(error=f'Google TTS returned {r.status_code}'), r.status_code)
     except Exception as e:
-        return {'error': str(e)}, 500
+        return jsonify(error=str(e)), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
-
