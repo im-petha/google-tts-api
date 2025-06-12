@@ -1,6 +1,5 @@
 import requests
 from flask import Flask, request, Response, jsonify
-from flask_compress import Compress
 
 app = Flask(__name__)
 
